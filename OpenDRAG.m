@@ -236,7 +236,7 @@ while true
         rpm = rf*rg(gear)*rp*v/Rt*60/2/pi ;
         rpm_shift = shift_points(gear) ;
     end
-    % checking for gearshifts
+    % checking for gearshifts     poop
     if rpm>=rpm_shift && ~shifting % need to change gears
         if gear==veh.nog % maximum gear number
             % HUD
