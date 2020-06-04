@@ -48,8 +48,8 @@ tic
 
 %% Filenames
 
-trackfile = 'OpenTRACK Tracks/OpenTRACK_Spa-Francorchamps_Closed_Forward.mat' ;
-vehiclefile = 'OpenVEHICLE Vehicles/OpenVEHICLE_Formula 1_Open Wheel.mat' ;
+trackfile = 'OpenTRACK Tracks/OpenTRACK_FSAE Skidpad_Closed_Forward.mat' ;
+vehiclefile = 'OpenVEHICLE Vehicles/OpenVEHICLE_BFR 2019_Open Wheel.mat' ;
 
 %% Loading circuit
 
@@ -367,8 +367,10 @@ function [sim] = simulate(veh,tr,simname,logid)
                     end
                     % checking if point is already solved in other apex iteration
                     if flag(j,k) || flag(j,k_rest)
-                        if max(v(j_next,i,k)>=v(j_next,i_rest,k)) || max(v(j_next,i,k)>v(j_next,i_rest,k_rest))
-                            break
+                        if not(isempty(i_rest))
+                            if max(v(j_next,i,k)>=v(j_next,i_rest,k)) || max(v(j_next,i,k)>v(j_next,i_rest,k_rest))
+                                break
+                            end
                         end
                     end
                     % updating flag and grogress bar
