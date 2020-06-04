@@ -58,13 +58,13 @@ fclose('all') ;
 
 %% Track file selection
 
-filename = 'Paul Ricard data.csv' ;
+filename = '2019_Endurance.xlsx' ;
 
 %% Mode selection
 
-mode = 'logged data' ;
-% mode = 'shape data' ;
-log_mode = 'speed & yaw' ;
+%mode = 'logged data' ;
+mode = 'shape data' ;
+%log_mode = 'speed & yaw' ;
 % log_mode = 'speed & latacc' ;
 
 %% Settings
