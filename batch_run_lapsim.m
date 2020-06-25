@@ -5,7 +5,7 @@ base_car = "BFR 2019.xlsx";
 
 cl_var.Name = "Lift Coefficient CL";
 cl_var.Type = "Sweep";
-cl_var.Values = [ .5, .125, -.5, -1, -2, -3]; %Should be ordered
+cl_var.Values = [ .5, .125, -.5, -1, -2, -3]; %Should be ordered for nice plots
 
 cd_var.Name = "Drag Coefficient CD";
 cd_var.Type = "Constant";
@@ -13,14 +13,14 @@ cd_var.Values = [-.125];
 
 m_var.Name = "Total Mass";
 m_var.Type = "Sweep";
-m_var.Values = [276, 273, 270, 267, 264, 261, 258, 255]; %Should be ordered
+m_var.Values = [276, 273]; %Should be ordered for nice plots
 
 vehicle_vars = [cl_var, cd_var, m_var];
 tracks = ["OpenTRACK_2019 AutoX_Open_Forward.mat","OpenTRACK_FSAE Skidpad_Closed_Forward.mat"];
-sims = {@run_track};
+sims = {@run_track,@run_accel};
 
 %Plot plot_vars(1) on x for constant plot_vars(2) 
-plot_vars = [m_var,cl_var];
+plot_vars = [cl_var,m_var,];
 
 
 %% Redirect Open*** Files - This is sketch but works
@@ -149,7 +149,6 @@ ret.t = sim.laptime.data;
 ret.name = track;
 end
 
-%Doesn't work
 function ret  = run_accel()
 save('state.mat');
 batch_accel_tester
@@ -157,7 +156,7 @@ close all
 load('state.mat');
 delete('state.mat');
 
-ret.t = sim.laptime.data;
+ret.t = t_finish;
 ret.name = "Accel";
 end
 

@@ -188,23 +188,24 @@ while true
     BPS(i) = 0 ;
     GEAR(i) = gear ;
     % checking if rpm limiter is on or if out of memory
-    if v>=veh.v_max
-        % HUD
-        fprintf('Engine speed limited\t')
-        hud(v,a,rpm,gear,t,x,t_start,x_start)
-        break
-    elseif i==N
-        % HUD
-        disp(['Did not reach maximum speed at time ',num2str(t),' s'])
-        break
-    end
-    % check if drag limited
-    if tps==1 && ax+ax_drag<=ax_sens
-        % HUD
-        fprintf('Drag limited        \t')
-        hud(v,a,rpm,gear,t,x,t_start,x_start)
-        break
-    end
+%     if v>=veh.v_max
+%         HUD
+%         fprintf('Engine speed limited\t')
+%         hud(v,a,rpm,gear,t,x,t_start,x_start)
+%         break
+%     elseif i==N
+%         HUD
+%         disp(['Did not reach maximum speed at time ',num2str(t),' s'])
+%         break
+%     end
+%     check if drag limited
+%     if tps==1 && ax+ax_drag<=ax_sens
+%         HUD
+%         fprintf('Drag limited        \t')
+%         hud(v,a,rpm,gear,t,x,t_start,x_start)
+%         break
+%     end
+
     % checking dist trap
     if check_dist_traps
         % checking if current dist is above trap dist
@@ -216,6 +217,8 @@ while true
             % checking if dist traps are completed
             if trap_number>length(dist_trap)
                 check_dist_traps = false ;
+                t_finish = t;
+                break
             end
         end
     end
@@ -239,10 +242,11 @@ while true
     % checking for gearshifts     poop
     if rpm>=rpm_shift && ~shifting % need to change gears
         if gear==veh.nog % maximum gear number
+            %Ignore and let run at rev limit
             % HUD
-            fprintf('Engine speed limited\t')
-            hud(v,a,rpm,gear,t,x,t_start,x_start)
-            break
+%             fprintf('Engine speed limited\t')
+%             hud(v,a,rpm,gear,t,x,t_start,x_start)
+%             break
         else % higher gear available
             % shifting condition
             shifting = true ;
