@@ -4,23 +4,35 @@ test_name = 'test_1';
 base_car = "BFR 2019.xlsx"; 
 
 cl_var.Name = "Lift Coefficient CL";
-cl_var.Type = "Sweep";
-cl_var.Values = [ .5, .125, -.5, -1, -2, -3]; %Should be ordered for nice plots
+cl_var.Type = "Constant";
+cl_var.Values = [0]; %Should be ordered for nice plots
 
-cd_var.Name = "Drag Coefficient CD";
-cd_var.Type = "Constant";
-cd_var.Values = [-.125]; 
+lon_var.Name = "Lateral Friction Sensitivity";
+lon_var.Type = "Sweep";
+lon_var.Values = [0.00033474,.0001]; 
 
 m_var.Name = "Total Mass";
-m_var.Type = "Sweep";
-m_var.Values = [276, 273]; %Should be ordered for nice plots
+m_var.Type = "Constant";
+m_var.Values = [267]; %Should be ordered for nice plots
 
-vehicle_vars = [cl_var, cd_var, m_var];
-tracks = ["OpenTRACK_2019 AutoX_Open_Forward.mat","OpenTRACK_FSAE Skidpad_Closed_Forward.mat"];
-sims = {@run_track,@run_accel};
+vehicle_vars = [lon_var,cl_var];
+base_config_index = [2,1,1]; %Index into each vehicle var for the sim to use as reference
+
+%tracks = ["OpenTRACK_2019 AutoX_Open_Forward.mat","OpenTRACK_FSAE Skidpad_Closed_Forward.mat"];
 
 %Plot plot_vars(1) on x for constant plot_vars(2) 
-plot_vars = [cl_var,m_var,];
+plot_vars = [lon_var,cl_var];
+
+auto_x_weight = .5;
+enduro_weight = .7;
+skid_weight = .2;
+accel_weight = .4;
+ref_times = [];
+
+%Order should match for below
+sim_weights = [auto_x_weight,enduro_weight,skid_weight,accel_weight];
+%sims = {@run_autox,@run_enduro,@run_skid,@run_accel};
+sims = {@run_skid};
 
 
 %% Redirect Open*** Files - This is sketch but works
@@ -45,7 +57,7 @@ for i = 1:length(vehicle_vars)
         base_car_table.Value(base_car_table.Description == var.Name) = var.Values(1);
     end
 end
-result = run(sims,tracks,vehicle_vars,1,base_car_table);
+result = run(sims,vehicle_vars,1,base_car_table);
 T = array2table(result.runs);
 T.Properties.VariableNames = result.col_names
 writetable(T,['batch_run_',test_name,'.xlsx']);
@@ -77,7 +89,7 @@ delete('batch_lap_tester.m')
 
 %% Helper Functions
 
-function ret = run(sims,tracks,vehicle_vars,var_ind,base_car_table)
+function ret = run(sims,vehicle_vars,var_ind,base_car_table)
 var = vehicle_vars(var_ind);
 
 if var_ind == length(vehicle_vars)
@@ -86,6 +98,7 @@ if var_ind == length(vehicle_vars)
     for j=1:length(var.Values)
         base_car_table.Value(base_car_table.Description == var.Name) = var.Values(j);
         writematrix(base_car_table.Value(:),"batch_vehicle.xlsx",'Sheet',1,'Range','C4:C52');
+        writecell({"RWD"},'batch_vehicle.xlsx','Sheet','Info','Range','C36')
         save('state.mat');
         batch_vehicle_tester
         close all
@@ -95,21 +108,26 @@ if var_ind == length(vehicle_vars)
         ts = [var.Values(j)];
         for i = 1:length(sims)
             sim = sims{i};
-            if isequal(@run_accel,sim)
-                new_ret = sim();
-                ts(end+1) = new_ret.t;
-                if j ==1
-                    run_names(end+1) = "Accel";
-                end
-            else
-                for k = 1:length(tracks)
-                    new_ret = sim(tracks(k));
-                    ts(end+1) = new_ret.t;
-                    if j == 1
-                        run_names(end+1) = new_ret.name;
-                    end
-                end
+            new_ret = sim();
+            if(j ==1)
+                run_names(end+1) = new_ret.name;
             end
+            ts(end+1) = new_ret.t;
+%             if isequal(@run_accel,sim)
+%                 new_ret = sim();
+%                 ts(end+1) = new_ret.t;
+%                 if j ==1
+%                     run_names(end+1) = "Accel";
+%                 end
+%             else
+%                 for k = 1:length(tracks)
+%                     
+%                     ts(end+1) = new_ret.t;
+%                     if j == 1
+%                         run_names(end+1) = new_ret.name;
+%                     end
+%                 end
+%             end
         end
         all_ts(end+1,:) = ts;
     end
@@ -121,7 +139,7 @@ end
 for i = 1:length(var.Values)
     base_car_table.Value(base_car_table.Description == var.Name) = var.Values(i);
     
-    new_ret = run(sims,tracks,vehicle_vars,var_ind+1,base_car_table);
+    new_ret = run(sims,vehicle_vars,var_ind+1,base_car_table);
     num_new_rows = length(new_ret.runs(:,1));
     new_runs = [var.Values(i)*ones(num_new_rows,1),new_ret.runs];
     if i == 1
@@ -135,8 +153,9 @@ end
 
 end
 
-function ret  = run_track(track)
+function ret  = run_custom()
 track_dir = 'OpenTRACK Tracks/';
+track = "";
 copyfile(track_dir+track,'OpenTRACK Tracks/batch_track.mat');
 
 save('state.mat');
@@ -149,6 +168,58 @@ ret.t = sim.laptime.data;
 ret.name = track;
 end
 
+function ret  = run_autox()
+track_dir = 'OpenTRACK Tracks/';
+track = "OpenTRACK_2019 AutoX_Open_Forward.mat";
+copyfile(track_dir+track,'OpenTRACK Tracks/batch_track.mat');
+
+save('state.mat');
+batch_lap_tester
+close all
+load('state.mat');
+delete('state.mat');
+
+a = 1.8826; b = 2.9227;
+ret.t = sim.laptime.data;
+ret.name = "AutoX";
+end
+
+function ret  = run_enduro()
+track_dir = 'OpenTRACK Tracks/';
+track = "OpenTRACK_2019 Endurance_Closed_Forward.mat";
+copyfile(track_dir+track,'OpenTRACK Tracks/batch_track.mat');
+
+save('state.mat');
+batch_lap_tester
+close all
+load('state.mat');
+delete('state.mat');
+
+a = .4309; b = 1.3906;
+ref_real_time = 1630.377/11;
+ref_sim_time = 0;
+winning_time = 1267.742/11;
+ret.t = sim.laptime.data;
+ret.name = "Enduro";
+end
+
+function ret  = run_skid()
+track_dir = 'OpenTRACK Tracks/';
+track = "OpenTRACK_FSAE Skidpad_Closed_Forward.mat";
+copyfile(track_dir+track,'OpenTRACK Tracks/batch_track.mat');
+
+save('state.mat');
+batch_lap_tester
+close all
+load('state.mat');
+delete('state.mat');
+
+a = 5.3069; b = 5.1148;
+
+ret.t = sim.laptime.data;
+ret.name = "Skidpad";
+end
+
 function ret  = run_accel()
 save('state.mat');
 batch_accel_tester
@@ -156,6 +227,7 @@ close all
 load('state.mat');
 delete('state.mat');
 
+a = 1.7759; b = 2.7479;
 ret.t = t_finish;
 ret.name = "Accel";
 end
